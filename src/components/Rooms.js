@@ -61,7 +61,7 @@ const Rooms = () => {
         }
     }
     useEffect(() => {
-        
+        getDataFromBackend();
     },[getDataFromBackend])
     console.log(editIndex);
     const handleLogoutButton = () => {

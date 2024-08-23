@@ -65,7 +65,7 @@ const Persons = () => {
     }
 
     useEffect(() => {
-        
+        getPersonsFromBackend();
     }, [getPersonsFromBackend]);
 
     return (
