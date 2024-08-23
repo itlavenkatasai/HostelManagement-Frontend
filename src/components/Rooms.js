@@ -61,8 +61,8 @@ const Rooms = () => {
         }
     }
     useEffect(() => {
-        getDataFromBackend();
-    },[])
+        
+    },[getDataFromBackend])
     console.log(editIndex);
     const handleLogoutButton = () => {
         localStorage.removeItem("authToken");
