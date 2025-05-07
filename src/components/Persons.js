@@ -14,7 +14,7 @@ const Persons = () => {
     const [errors, setError] = useState({});
     const navigate = useNavigate();
 
-    const env = 'DEV';
+    const env = 'PROD';
     const publicMongoUrl = env === 'PROD' ? 'https://hostelmanagement-backend.onrender.com' : 'http://localhost:3000';
 
     const handleBackButton = () => navigate('/rooms');

@@ -24,7 +24,7 @@ const PersonsForm = ({
 
     const [personFormFields, setPersonFormFields] = useState(initialForm);
 
-    const env = 'DEV';
+    const env = 'PROD';
     const publicMongoUrl =
         env === 'PROD' ? 'https://hostelmanagement-backend.onrender.com' : 'http://localhost:3000';
 
