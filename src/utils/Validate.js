@@ -40,13 +40,15 @@ export const checkValidateRoomForm = (RoomNumber,SharingType) => {
   return newError;
 }
 
-export const checkValidatePersonForm = (Name,PhoneNumber,DateOfJoining) => {
+export const checkValidatePersonForm = (Name, PhoneNumber, DateOfJoining, AmountPerMonth) => {
   const newError = {};
-  console.log(Name,PhoneNumber,DateOfJoining);
   const phoneRegex = /^\d{10}$/;
-  if(Name === '') newError['Name'] = 'This field cannot be empty';
-  if(PhoneNumber === '') newError["PhoneNumber"] = 'This field cannot be empty';
-  if(DateOfJoining === '') newError["DateOfJoining"] = 'This field cannot be empty';
+
+  if (Name === '') newError['Name'] = 'This field cannot be empty';
+  if (PhoneNumber === '') newError["PhoneNumber"] = 'This field cannot be empty';
+  if (DateOfJoining === '') newError["DateOfJoining"] = 'This field cannot be empty';
   if (PhoneNumber !== '' && !phoneRegex.test(PhoneNumber)) newError.PhoneNumber = "Invalid phone number";
+  if (AmountPerMonth <= 0) newError.AmountPerMonth = "Amount per month must be a positive number";
+  
   return newError;
-}
+};

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react';
 import { checkValidatePersonForm } from '../utils/Validate';
 import axios from 'axios';
 
@@ -11,164 +11,199 @@ const PersonsForm = ({
     setEditIndex,
     errors,
     setError,
-    sharingType
+    sharingType,
 }) => {
+    const initialForm = {
+        Name: '',
+        PhoneNumber: '',
+        DateOfJoining: '',
+        Photo: '', // Photo as empty string
+        AmountPerMonth: '',
+        Paid: false,
+    };
 
-    const formData = editIndex > -1 ? personData[editIndex] : {
-        Name: "",
-        PhoneNumber: "",
-        DateOfJoining: "",
-        Photo: "",
-    }
-    // console.log("formData ::", formData);
-    console.log("personData,sharingType",personData.length,sharingType);
+    const [personFormFields, setPersonFormFields] = useState(initialForm);
 
-    const [personFormFields, setPersonFormFields] = useState(formData);
-    const env = 'PROD';
-    const publicMongoUrl = env === 'PROD' ? 'https://hostelmanagement-backend.onrender.com' : 'http://localhost:3000';
+    const env = 'DEV';
+    const publicMongoUrl =
+        env === 'PROD' ? 'https://hostelmanagement-backend.onrender.com' : 'http://localhost:3000';
+
+    useEffect(() => {
+        if (editIndex > -1 && personData[editIndex]) {
+            setPersonFormFields(personData[editIndex]);
+        } else {
+            setPersonFormFields(initialForm);
+        }
+    }, [editIndex, personData]);
 
     const handleSubmitButton = async (e) => {
         e.preventDefault();
-        console.log(personFormFields);
-        const error = checkValidatePersonForm(personFormFields.Name, personFormFields.PhoneNumber, personFormFields.DateOfJoining);
-        console.log("personerror", error);
+
+        const error = checkValidatePersonForm(
+            personFormFields.Name,
+            personFormFields.PhoneNumber,
+            personFormFields.DateOfJoining
+        );
+
         if (Object.keys(error).length > 0) {
             setError(error);
             return;
         }
-        if (editIndex === -1) {
-            try {
-                const response = await axios.post(`${publicMongoUrl}/hostelRoomPerson/${roomNumber}`, personFormFields, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("authToken")}`
-                    }
-                });
-                console.log(response);
-                getPersonsFromBackend();
-                setPersonForm(false);
-                setPersonFormFields({
-                    Name: "",
-                    PhoneNumber: "",
-                    DateOfJoining: "",
-                    Photo: "",
-                });
-                setError({});
-            } catch (error) {
-                const responseError = error;
-                console.log(responseError.response.data.message);
-                setError({
-                    genral: "Registration failed. Please try again.",
-                    backEndError: responseError.response.data.message
-                });
+
+        try {
+            const payload = {
+                Name: personFormFields.Name,
+                PhoneNumber: personFormFields.PhoneNumber,
+                DateOfJoining: personFormFields.DateOfJoining,
+                AmountPerMonth: personFormFields.AmountPerMonth,
+                Paid: personFormFields.Paid,
+                Photo: '', // No image uploading
+            };
+
+            const headers = {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+            };
+
+            let response;
+            if (editIndex === -1) {
+                response = await axios.post(`${publicMongoUrl}/hostelRoomPerson/${roomNumber}`, payload, { headers });
+            } else {
+                const id = personData[editIndex]._id;
+                response = await axios.patch(`${publicMongoUrl}/hostelRoomPerson/${id}`, payload, { headers });
             }
-        } else {
-            const id = personData[editIndex]._id;
-            try {
-                await axios.patch(`${publicMongoUrl}/hostelRoomPerson/${id}`, personFormFields, {
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("authToken")}`
-                    }
-                });
-                getPersonsFromBackend();
-                setPersonForm(false);
-                setPersonFormFields({
-                    Name: "",
-                    PhoneNumber: "",
-                    DateOfJoining: "",
-                    Photo: "",
-                });
-                setEditIndex(-1);
-                setError({});
-            } catch (error) {
-                const responseError = error;
-                console.log(responseError.response.data.message);
-                setError({
-                    genral: "Registration failed. Please try again.",
-                    backEndError: responseError.response.data.message
-                });
-            }
+
+            console.log(response.data);
+
+            getPersonsFromBackend();
+            setPersonForm(false);
+            setEditIndex(-1);
+            setPersonFormFields(initialForm);
+            setError({});
+        } catch (error) {
+            console.log(error.response?.data?.message);
+            setError({
+                general: 'Operation failed. Please try again.',
+                backEndError: error.response?.data?.message,
+            });
         }
-    }
+    };
+
     return (
-        <>
-        <div>
-        <p className='text-center text-3xl pt-3 pb-3'>Person</p>
-        <div className='flex justify-center pb-5'>
-            <form className='w-9/12'>
-                <section></section>
+        <div className="w-full flex justify-center items-center py-6 px-4">
+            <form
+                className="w-full max-w-xl bg-white shadow-lg rounded-xl p-6 space-y-4"
+                onSubmit={handleSubmitButton}
+            >
+                <h2 className="text-2xl font-bold text-center mb-6 text-gray-700">
+                    {editIndex === -1 ? 'Add Person' : 'Update Person'}
+                </h2>
+
                 <div>
-                    <input type='text'
-                        placeholder='Name'
-                        className='block w-full px-4 py-2 mb-4 border border-gray-300 rounded placeholder-gray-500'
+                    <input
+                        type="text"
+                        placeholder="Name"
+                        className="w-full px-4 py-2 border border-gray-300 rounded"
                         value={personFormFields.Name}
-                        onChange={(e) => {
-                            setPersonFormFields({
-                                ...personFormFields,
-                                Name: e.target.value
-                            })
-                        }}
-                    ></input>
-                    {errors.Name && <p className='text-red-600'>{errors.Name}</p>}
-                </div>
-                <div>
-                    <input type='number'
-                        placeholder='Phone Number'
-                        className='block w-full px-4 py-2 mb-4 border border-gray-300 rounded placeholder-gray-500'
-                        value={personFormFields.PhoneNumber}
-                        onChange={(e) => {
-                            setPersonFormFields({
-                                ...personFormFields,
-                                PhoneNumber: e.target.value
-                            })
-                        }}></input>
-                    {errors.PhoneNumber && <p className='text-red-600'>{errors.PhoneNumber}</p>}
-                </div>
-                <div>
-                    <input type='date'
-                        placeholder='Date of Joining'
-                        className='block w-full px-4 py-2 mb-4 border border-gray-300 rounded placeholder-gray-500'
-                        value={personFormFields.DateOfJoining}
-                        onChange={(e) => {
-                            setPersonFormFields({
-                                ...personFormFields,
-                                DateOfJoining: e.target.value
-                            })
-                        }}></input>
-                    {errors.DateOfJoining && <p className='text-red-600'>{errors.DateOfJoining}</p>}
-                </div>
-                <div>
+                        onChange={(e) => setPersonFormFields({ ...personFormFields, Name: e.target.value })}
+                    />
+                    {errors.Name && <p className="text-red-600 text-sm mt-1">{errors.Name}</p>}
                 </div>
 
                 <div>
-                    <input type='file'
-                        placeholder='Photo'
-                        alt='image'
-                        className='block w-full px-4 py-2 mb-4 border border-gray-300 rounded placeholder-gray-500'
-                        value={personFormFields.Photo}
-                        onChange={(e) => {
-                            setPersonFormFields({
-                                ...personFormFields,
-                                Photo: e.target.value
-                            })
-                        }}></input>
+                    <input
+                        type="number"
+                        placeholder="Phone Number"
+                        className="w-full px-4 py-2 border border-gray-300 rounded"
+                        value={personFormFields.PhoneNumber}
+                        onChange={(e) =>
+                            setPersonFormFields({ ...personFormFields, PhoneNumber: e.target.value })
+                        }
+                    />
+                    {errors.PhoneNumber && <p className="text-red-600 text-sm mt-1">{errors.PhoneNumber}</p>}
                 </div>
-                <div className='flex justify-between space-x-2 '>
-                    <input type='submit' value='Submit' className='bg-blue-600 rounded text-white w-full py-3' onClick={handleSubmitButton}></input>
-                    <input type='reset' value='Reset' className='bg-gray-500 text-white w-full py-3 rounded'></input>
-                    <button className='bg-green-400 px-10 rounded' onClick={() => {
-                        setPersonForm(false);
-                        setError({});
-                    }}>Close</button>
+
+                <div>
+                    <input
+                        type="date"
+                        className="w-full px-4 py-2 border border-gray-300 rounded"
+                        value={personFormFields.DateOfJoining}
+                        onChange={(e) =>
+                            setPersonFormFields({ ...personFormFields, DateOfJoining: e.target.value })
+                        }
+                    />
+                    {errors.DateOfJoining && (
+                        <p className="text-red-600 text-sm mt-1">{errors.DateOfJoining}</p>
+                    )}
+                </div>
+
+                <div>
+                    <input
+                        type="number"
+                        placeholder="Amount per Month"
+                        className="w-full px-4 py-2 border border-gray-300 rounded"
+                        value={personFormFields.AmountPerMonth}
+                        onChange={(e) =>
+                            setPersonFormFields({ ...personFormFields, AmountPerMonth: e.target.value })
+                        }
+                    />
+                    {errors.AmountPerMonth && (
+                        <p className="text-red-600 text-sm mt-1">{errors.AmountPerMonth}</p>
+                    )}
+                </div>
+
+                <div>
+                    <label className="flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={personFormFields.Paid}
+                            onChange={(e) =>
+                                setPersonFormFields({ ...personFormFields, Paid: e.target.checked })
+                            }
+                            className="mr-2"
+                        />
+                        Paid
+                    </label>
+                </div>
+
+                <div>
+                    <input
+                        type="file"
+                        disabled
+                        className="w-full px-4 py-2 border border-gray-300 rounded opacity-50 cursor-not-allowed"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">File upload disabled</p>
+                </div>
+
+                <div className="flex flex-col md:flex-row md:space-x-3 gap-3">
+                    <button
+                        type="submit"
+                        className="bg-blue-600 hover:bg-blue-700 text-white w-full py-2 rounded"
+                    >
+                        {editIndex === -1 ? 'Add' : 'Update'}
+                    </button>
+                    <button
+                        type="reset"
+                        onClick={() => setPersonFormFields(initialForm)}
+                        className="bg-gray-500 hover:bg-gray-600 text-white w-full py-2 rounded"
+                    >
+                        Reset
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setPersonForm(false);
+                            setError({});
+                            setEditIndex(-1);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white w-full py-2 rounded"
+                    >
+                        Close
+                    </button>
                 </div>
             </form>
         </div>
+    );
+};
 
-    </div> 
-        </>
-        
-    )
-}
-
-export default PersonsForm
+export default PersonsForm;

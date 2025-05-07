@@ -4,130 +4,161 @@ import { useNavigate } from 'react-router-dom';
 import RoomForm from './RoomForm';
 
 const Rooms = () => {
-    const [data,setData] = useState([]);
+    const [data, setData] = useState([]);
     const [editIndex, setEditIndex] = useState(-1);
     const [showRoomForm, setShowRoomForm] = useState(false);
     const [errors, setError] = useState({});
     const navigate = useNavigate();
 
-    const handleAddRoomButton = () => {
-        setShowRoomForm(true);
-    };
-    const env = 'PROD';
+    const env = 'DEV';
     const publicMongoUrl = env === 'PROD' ? 'https://hostelmanagement-backend.onrender.com' : 'http://localhost:3000';
-    const handleViewButton = (roomNumber,sharingType) => {
-        navigate('/persons', {state: {
-            roomNumber,
-            sharingType
-        }});
-    }
-    const getDataFromBackend = async ()=>{
-        try{
-            const response = await axios.get(`${publicMongoUrl}/hostelRooms`,{
-                headers : {
-                    Authorization : `Bearer ${localStorage.getItem("authToken")}`
+
+    const handleAddRoomButton = () => setShowRoomForm(true);
+
+    const handleViewButton = (roomNumber, sharingType) => {
+        navigate('/persons', {
+            state: { roomNumber, sharingType }
+        });
+    };
+
+    const getDataFromBackend = async () => {
+        try {
+            const response = await axios.get(`${publicMongoUrl}/hostelRooms`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("authToken")}`
                 }
             });
-            // console.log(response.data.data);
             setData(response.data.data);
-        }catch(error){
-            const responseError = error;
-            console.log(responseError.response.data.message);
+        } catch (error) {
+            console.log(error.response?.data?.message);
             setError({
-                genral: "Registration failed. Please try again.",
-                backEndError: responseError.response.data.message
+                general: "Data fetch failed. Please try again.",
+                backEndError: error.response?.data?.message
             });
         }
-    }
+    };
+
     const deleteRoom = async (index) => {
         const id = data[index]._id;
-        console.log("dlt",id);
-
-        try{
-            await axios.delete(`${publicMongoUrl}/${id}`,{
-            headers : {
-                Authorization : `Bearer ${localStorage.getItem("authToken")}`
-            }
-        });
-        getDataFromBackend();
-        // setEditIndex(-1);
-        }catch(error){
-            const responseError = error;
-            console.log(responseError.response.data.message);
+        console.log(id);
+        try {
+            // Corrected URL with '/hostelRoom/' in front of the id
+            await axios.delete(`${publicMongoUrl}/hostelRoom/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("authToken")}`
+                }
+            });
+            // After successful deletion, refresh the data
+            getDataFromBackend();
+        } catch (error) {
+            console.log(error.response?.data?.message);
             setError({
-                genral: "Registration failed. Please try again.",
-                backEndError: responseError.response.data.message
+                general: "Delete failed. Please try again.",
+                backEndError: error.response?.data?.message
             });
         }
-    }
+    };
+    
+
     useEffect(() => {
         getDataFromBackend();
-    },[getDataFromBackend])
-    console.log(editIndex);
+    }, []);
+
     const handleLogoutButton = () => {
         localStorage.removeItem("authToken");
         navigate("/login");
-    } 
-    
+    };
 
     return (
-        <div>
-            {errors.backEndError && <p className='text-red-500 text-xl text center'>{errors.backEndError}</p>}
-            <div className='flex px-40 py-10 justify-between'>
-                <p className='text-4xl'>Welcome to App</p>
-                <button className='px-7 py-2 bg-red-600 text-white rounded' onClick={handleLogoutButton}>Logout</button>
+        <div className='min-h-screen bg-gray-50'>
+            {errors.backEndError && (
+                <p className='text-red-500 text-center text-lg mt-4'>{errors.backEndError}</p>
+            )}
+
+            {/* Header */}
+            <div className='flex justify-between items-center px-4 sm:px-10 lg:px-20 py-6 bg-white shadow'>
+                <h1 className='text-3xl font-bold'>Welcome to Hostel Manager</h1>
+                <button className='px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition' onClick={handleLogoutButton}>
+                    Logout
+                </button>
             </div>
-            {showRoomForm && <RoomForm 
-            getDataFromBackend = {getDataFromBackend} 
-            setShowRoomForm = {setShowRoomForm} 
-            data = {data} 
-            setData={setData} 
-            editIndex={editIndex} 
-            setEditIndex = {setEditIndex}
-            errors = {errors}
-            setError = {setError}/>}
-            <div className='flex px-32 justify-between'>
-                <p className='text-2xl pl-16'>Rooms</p>
+
+            {/* Room Form */}
+            {showRoomForm && (
+                <RoomForm
+                    getDataFromBackend={getDataFromBackend}
+                    setShowRoomForm={setShowRoomForm}
+                    data={data}
+                    setData={setData}
+                    editIndex={editIndex}
+                    setEditIndex={setEditIndex}
+                    errors={errors}
+                    setError={setError}
+                />
+            )}
+
+            {/* Room Table Header */}
+            <div className='flex justify-between items-center px-4 sm:px-10 lg:px-20 py-6'>
+                <h2 className='text-2xl font-semibold'>Rooms</h2>
                 <button
-                    className='px-7 py-2 bg-green-600 text-white rounded mr-5'
+                    className='px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition'
                     onClick={handleAddRoomButton}
                 >
                     Add New Room
                 </button>
             </div>
-            <div className='flex justify-center py-10'>
-                <table className='border border-collapse'>
-                    <thead>
+
+            {/* Table */}
+            <div className='px-4 sm:px-10 lg:px-20 pb-10 overflow-x-auto'>
+                <table className='min-w-full border border-collapse bg-white shadow rounded'>
+                    <thead className='bg-gray-100'>
                         <tr>
-                            <th className='border border-gray-600 px-28 py-2 text-left'>SNo</th>
-                            <th className='border border-gray-600 px-28 py-2 text-left'>Room number</th>
-                            <th className='border border-gray-600 px-28 py-2 text-left'>Sharing Type</th>
-                            <th className='border border-gray-600 px-28 py-2 text-left'>Actions</th>
+                            <th className='border px-6 py-3 text-left'>S.No</th>
+                            <th className='border px-6 py-3 text-left'>Room Number</th>
+                            <th className='border px-6 py-3 text-left'>Sharing Type</th>
+                            <th className='border px-6 py-3 text-left'>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {
-                            data.map((room,index)=>(
-                                <tr key={room.RoomNumber} className='text-center border'>
-                                    <td className='border border-gray-300'>{index+1}</td>
-                                    <td className='border border-gray-300'>{room.RoomNumber}</td>
-                                    <td className='border border-gray-300'>{room.SharingType + " sharing"}</td>
-                                    <td className='border border-gray-300'>
-                                        <div className='flex justify-between px-3 py-2'>
-                                            <button className='bg-cyan-400 px-3 py-1 rounded-lg ' onClick={() => {handleViewButton(room.RoomNumber,room.SharingType)}} >View</button>
-                                            <button className='bg-blue-600 px-3 py-1 rounded-lg text-white' onClick={() => {
+                        {data.map((room, index) => (
+                            <tr key={room._id} className='text-sm'>
+                                <td className='border px-6 py-2'>{index + 1}</td>
+                                <td className='border px-6 py-2'>{room.RoomNumber}</td>
+                                <td className='border px-6 py-2'>{room.SharingType} Sharing</td>
+                                <td className='border px-6 py-2'>
+                                    <div className='flex flex-wrap gap-2'>
+                                        <button
+                                            className='bg-cyan-500 text-white px-4 py-1 rounded hover:bg-cyan-600 transition'
+                                            onClick={() => handleViewButton(room.RoomNumber, room.SharingType)}
+                                        >
+                                            View
+                                        </button>
+                                        <button
+                                            className='bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition'
+                                            onClick={() => {
                                                 setEditIndex(index);
                                                 setShowRoomForm(true);
-                                            }}>Update</button>
-                                            <button className='bg-red-600 px-3 py-1 rounded-lg text-white' onClick={() => {
-                                                
-                                                deleteRoom(index);
-                                            }}>Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        }
+                                            }}
+                                        >
+                                            Update
+                                        </button>
+                                        <button
+                                            className='bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 transition'
+                                            onClick={() => deleteRoom(index)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {data.length === 0 && (
+                            <tr>
+                                <td colSpan="4" className='text-center py-6 text-gray-500'>
+                                    No rooms found.
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
